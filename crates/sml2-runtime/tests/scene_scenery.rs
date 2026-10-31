@@ -282,6 +282,19 @@ fn scene_background_edits_stay_behind_native_boss_sprites() {
 }
 
 #[test]
+fn bundled_tree_boss_arena_keeps_its_original_background() {
+    let game = session();
+    let target = SceneTarget::Arena { level: 5, gfx: 0 };
+    assert!(
+        game.scene_scenery(target)
+            .paints()
+            .iter()
+            .all(|paint| !(0..10).contains(&paint.x) || !(0..9).contains(&paint.y)),
+        "the bundled arena scenery should only decorate the surroundings"
+    );
+}
+
+#[test]
 fn arena_borders_preserve_the_level_camera_region_and_relocated_hud() {
     let mut game = session();
     let target = SceneTarget::Arena { level: 9, gfx: 2 };
