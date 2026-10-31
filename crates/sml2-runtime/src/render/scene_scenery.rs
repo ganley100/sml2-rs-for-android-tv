@@ -56,6 +56,118 @@ pub(crate) fn paint_border<P: Copy>(
     }
 }
 
+pub(super) fn has_scene_background(scenery: &SceneryOverlay) -> bool {
+    scenery
+        .paints()
+        .iter()
+        .any(|paint| (0..10).contains(&paint.x) && (0..9).contains(&paint.y))
+}
+
+fn tile_source_index(tile: u8, x: i32, y: i32) -> usize {
+    let sx = usize::from(tile) % 10 * 16 + x.rem_euclid(16) as usize;
+    let sy = usize::from(tile) / 10 * 16 + y.rem_euclid(16) as usize;
+    sy * 160 + sx
+}
+
+fn scene_pixel_index(
+    index: usize,
+    view: (usize, usize),
+    scale: usize,
+    origin: (i32, i32),
+) -> (i32, i32) {
+    let width = view.0 * scale;
+    (
+        (index % width / scale) as i32 - origin.0,
+        (index / width / scale) as i32 - origin.1,
+    )
+}
+
+fn paint_scene_background_native(
+    pixels: &mut [u8],
+    palette_sources: &[u8],
+    view: (usize, usize),
+    scale: usize,
+    scenery: &SceneryOverlay,
+    background: &[u8],
+    origin: (i32, i32),
+    protected: &[(i32, i32, i32, i32)],
+    hud: &[Option<()>],
+) {
+    let width = view.0 * scale;
+    if scale == 0
+        || pixels.len() != width * view.1 * scale
+        || palette_sources.len() != pixels.len()
+        || background.len() != 160 * 144
+    {
+        return;
+    }
+    for (index, pixel) in pixels.iter_mut().enumerate() {
+        if palette_sources[index] >> 2 != PaletteSource::Bg as u8 {
+            continue;
+        }
+        let (x, y) = scene_pixel_index(index, view, scale, origin);
+        if !(0..160).contains(&x) || !(0..144).contains(&y) {
+            continue;
+        }
+        if protected.iter().skip(1).any(|&(left, top, width, height)| {
+            (left..left + width).contains(&x) && (top..top + height).contains(&y)
+        }) || hud
+            .get(index / width / scale * view.0 + index % width / scale)
+            .is_some_and(Option::is_some)
+        {
+            continue;
+        }
+        if let Some(tile) = scenery.get(x.div_euclid(16), y.div_euclid(16)) {
+            *pixel = background[tile_source_index(tile, x, y)];
+        }
+    }
+}
+
+fn paint_scene_background_dx(
+    pixels: &mut [[u8; 3]],
+    palette_sources: &[PalettePixel],
+    view: (usize, usize),
+    scale: usize,
+    scenery: &SceneryOverlay,
+    background: &[[u8; 3]],
+    origin: (i32, i32),
+    protected: &[(i32, i32, i32, i32)],
+    hud: &[Option<()>],
+) {
+    let width = view.0 * scale;
+    if scale == 0
+        || pixels.len() != width * view.1 * scale
+        || palette_sources.len() != pixels.len()
+        || background.len() != 160 * 144
+    {
+        return;
+    }
+    for (index, pixel) in pixels.iter_mut().enumerate() {
+        if palette_sources[index].source != PaletteSource::Bg {
+            continue;
+        }
+        let (x, y) = scene_pixel_index(index, view, scale, origin);
+        if !(0..160).contains(&x) || !(0..144).contains(&y) {
+            continue;
+        }
+        if protected.iter().skip(1).any(|&(left, top, width, height)| {
+            (left..left + width).contains(&x) && (top..top + height).contains(&y)
+        }) || hud
+            .get(index / width / scale * view.0 + index % width / scale)
+            .is_some_and(Option::is_some)
+        {
+            continue;
+        }
+        let Some(tile) = scenery.get(x.div_euclid(16), y.div_euclid(16)) else {
+            continue;
+        };
+        let destination = (y as usize) * 160 + x as usize;
+        if *pixel == background[destination] {
+            *pixel = background[tile_source_index(tile, x, y)];
+        }
+    }
+}
+
 impl Session {
     /// Position of the original scene inside the rendered view. Arenas use
     /// the level camera's placement rather than a centred fixed screen.
@@ -73,6 +185,7 @@ impl Session {
                 );
             }
         }
+
         view::margin(size)
     }
 
@@ -323,23 +436,42 @@ impl Session {
         view: (usize, usize),
         scale: usize,
         output: OutputMode,
+        palette_sources: Option<&[u8]>,
     ) {
         let Some(target) = self.scene_scenery_target() else {
             return;
         };
         let overlay = self.scene_scenery(target);
-        if !overlay.is_empty() && view::enlarged(view) {
+        if !overlay.is_empty() && (has_scene_background(overlay) || view::enlarged(view)) {
             if let Ok(background) = self.scene_background(output) {
-                paint_border(
-                    frame,
-                    view,
-                    scale,
-                    overlay,
-                    &background,
-                    &self.scene_border_protected_rects(view),
-                    self.scene_border_origin(view),
-                    &self.scene_border_hud(view, None),
-                );
+                let origin = self.scene_border_origin(view);
+                if has_scene_background(overlay) {
+                    if let Some(palette_sources) = palette_sources {
+                        paint_scene_background_native(
+                            frame,
+                            palette_sources,
+                            view,
+                            scale,
+                            overlay,
+                            &background,
+                            origin,
+                            &self.scene_border_protected_rects(view),
+                            &self.scene_border_hud(view, None),
+                        );
+                    }
+                }
+                if view::enlarged(view) {
+                    paint_border(
+                        frame,
+                        view,
+                        scale,
+                        overlay,
+                        &background,
+                        &self.scene_border_protected_rects(view),
+                        origin,
+                        &self.scene_border_hud(view, None),
+                    );
+                }
             }
         }
     }
@@ -356,19 +488,128 @@ impl Session {
             return Ok(());
         };
         let overlay = self.scene_scenery(target);
-        if !overlay.is_empty() && view::enlarged(view) {
+        if !overlay.is_empty() && (has_scene_background(overlay) || view::enlarged(view)) {
+            let origin = self.scene_border_origin(view);
+            let protected = self.scene_border_protected_rects(view);
+            let hud = self.scene_border_hud(view, Some(dx));
             let background = self.scene_palette_dx(dx, character)?;
-            paint_border(
-                frame,
-                view,
-                scale,
-                overlay,
-                &background,
-                &self.scene_border_protected_rects(view),
-                self.scene_border_origin(view),
-                &self.scene_border_hud(view, Some(dx)),
-            );
+            if has_scene_background(overlay) {
+                let palette_sources = self.render_palette_frame(view);
+                paint_scene_background_dx(
+                    frame,
+                    &palette_sources,
+                    view,
+                    scale,
+                    overlay,
+                    &background,
+                    origin,
+                    &protected,
+                    &hud,
+                );
+            }
+            if view::enlarged(view) {
+                paint_border(
+                    frame,
+                    view,
+                    scale,
+                    overlay,
+                    &background,
+                    &protected,
+                    origin,
+                    &hud,
+                );
+            }
         }
+
         Ok(())
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use sml2_core::scenery::SceneryPaint;
+
+    fn one_background_paint() -> SceneryOverlay {
+        SceneryOverlay::try_from_paints(
+            vec![SceneryPaint {
+                x: 0,
+                y: 0,
+                metatile: 1,
+            }],
+            90,
+        )
+        .unwrap()
+    }
+
+    #[test]
+    fn native_scene_background_replaces_only_background_and_not_hud() {
+        let overlay = one_background_paint();
+        let mut pixels = vec![0; 160 * 144];
+        let mut sources = vec![PaletteSource::Bg as u8 * 4; pixels.len()];
+        pixels[0] = PaletteSource::Obj0 as u8 * 4;
+        sources[0] = PaletteSource::Obj0 as u8 * 4;
+        let mut background = vec![0; 160 * 144];
+        for y in 0..16 {
+            background[y * 160 + 16..y * 160 + 32].fill(3);
+        }
+
+        paint_scene_background_native(
+            &mut pixels,
+            &sources,
+            (160, 144),
+            1,
+            &overlay,
+            &background,
+            (0, 0),
+            &[(0, 0, 160, 144), (2, 0, 1, 1)],
+            &[],
+        );
+
+        assert_eq!(pixels[0], PaletteSource::Obj0 as u8 * 4);
+        assert_eq!(pixels[1], 3);
+        assert_eq!(pixels[2], 0, "the HUD stays in front of the background");
+    }
+
+    #[test]
+    fn dx_scene_background_replaces_pixels_that_are_not_foreground() {
+        let overlay = one_background_paint();
+        let mut pixels = vec![[1, 1, 1]; 160 * 144];
+        let mut sources = vec![
+            PalettePixel {
+                source: PaletteSource::Bg,
+                shade: 0,
+            };
+            pixels.len()
+        ];
+        sources[0].source = PaletteSource::Obj0;
+        let mut background = vec![[1, 1, 1]; 160 * 144];
+        for y in 0..16 {
+            background[y * 160 + 16..y * 160 + 32].fill([2, 2, 2]);
+        }
+
+        paint_scene_background_dx(
+            &mut pixels,
+            &sources,
+            (160, 144),
+            1,
+            &overlay,
+            &background,
+            (0, 0),
+            &[(0, 0, 160, 144), (2, 0, 1, 1)],
+            &[],
+        );
+
+        assert_eq!(
+            pixels[0],
+            [1, 1, 1],
+            "the foreground actor remains in front"
+        );
+        assert_eq!(pixels[1], [2, 2, 2]);
+        assert_eq!(
+            pixels[2],
+            [1, 1, 1],
+            "the HUD stays in front of the background"
+        );
     }
 }

@@ -1,5 +1,5 @@
 use crate::app::editor::state::Tool;
-use crate::app::{tests::app, Screen};
+use crate::app::{Screen, tests::app};
 use sml2_core::scenery::{SceneryOverlay, SceneryPaint};
 use sml2_runtime::scene_scenery::SceneTarget;
 
@@ -22,11 +22,13 @@ fn per_cell_scenery_files_load_and_resave_in_the_grouped_format() {
     let saved: SceneryOverlay = serde_json::from_str(&text).unwrap();
     assert_eq!(saved.get(-2, 48), Some(1));
     assert_eq!(saved.get(256, -1), Some(2));
-    assert!(std::fs::read_dir(&path).unwrap().all(|e| !e
-        .unwrap()
-        .file_name()
-        .to_string_lossy()
-        .ends_with(".tmp")));
+    assert!(
+        std::fs::read_dir(&path).unwrap().all(|e| !e
+            .unwrap()
+            .file_name()
+            .to_string_lossy()
+            .ends_with(".tmp"))
+    );
     app.editor = Default::default();
     app.open_editor(&ctx);
     assert_eq!(app.editor.work.as_ref().unwrap().scenery, saved);
@@ -289,8 +291,8 @@ fn export_snapshots_one_target_and_a_failed_write_keeps_the_draft_and_undo() {
     work.extend(Some((1, 1)));
     work.finish();
     assert_eq!(work.paint((-1, -1)), Some(7));
-    assert_eq!(work.paint((0, 0)), None);
-    assert_eq!(work.paint((1, 1)), None);
+    assert_eq!(work.paint((0, 0)), Some(7));
+    assert_eq!(work.paint((1, 1)), Some(7));
     app.begin_export();
     assert_eq!(app.editor_export_path(), Some("scenery-map-09.json"));
     let scene_release = path.join("release").join("scenery-map-09.json");
@@ -298,7 +300,7 @@ fn export_snapshots_one_target_and_a_failed_write_keeps_the_draft_and_undo() {
     let scene: SceneryOverlay =
         serde_json::from_slice(&std::fs::read(&scene_release).unwrap()).unwrap();
     assert_eq!(scene.get(-1, -1), Some(7));
-    assert_eq!(scene.get(0, 0), None);
+    assert_eq!(scene.get(0, 0), Some(7));
     let level_release: SceneryOverlay =
         serde_json::from_slice(&std::fs::read(&release).unwrap()).unwrap();
     assert_eq!(level_release, exported);
@@ -347,14 +349,14 @@ fn switching_levels_and_scenes_keeps_each_workspace() {
     work.viewport.zoom = 4;
     work.tool = Tool::Rectangle;
     work.begin((0, 0), false);
-    assert!(!work.finish(), "the original picture cannot be painted");
-    assert!(work.scenery.is_empty());
+    assert!(work.finish(), "scene background tiles can be painted");
+    assert_eq!(work.paint((0, 0)), Some(8));
     work.begin((-1, 0), false);
     work.extend(Some((2, 0)));
     work.finish();
     assert_eq!(work.paint((-1, 0)), Some(8));
-    assert_eq!(work.paint((0, 0)), None);
-    assert_eq!(work.paint((1, 0)), None);
+    assert_eq!(work.paint((0, 0)), Some(8));
+    assert_eq!(work.paint((1, 0)), Some(8));
     work.undo();
 
     app.select_editor_level(1);
@@ -390,7 +392,7 @@ fn switching_levels_and_scenes_keeps_each_workspace() {
     assert_eq!(work.metatile, 8);
     assert_eq!(work.tool, Tool::Rectangle);
     assert!(work.can_redo());
-    assert!(work.scenery.is_empty());
+    assert_eq!(work.paint((0, 0)), Some(8));
     work.redo();
     assert_eq!(work.paint((-1, 0)), Some(8));
     app.navigate(&ctx, Screen::Home);
@@ -398,7 +400,7 @@ fn switching_levels_and_scenes_keeps_each_workspace() {
     app.open_editor(&ctx);
     app.select_editor_scene(SceneTarget::Map(6));
     assert_eq!(app.editor.work.as_ref().unwrap().paint((-1, 0)), Some(8));
-    assert_eq!(app.editor.work.as_ref().unwrap().paint((0, 0)), None);
+    assert_eq!(app.editor.work.as_ref().unwrap().paint((0, 0)), Some(8));
     let level: SceneryOverlay =
         serde_json::from_slice(&std::fs::read(path.join("scenery-00.json")).unwrap()).unwrap();
     assert_eq!(level.get(-1, 0), Some(3));

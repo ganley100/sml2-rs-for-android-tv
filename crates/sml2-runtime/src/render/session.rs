@@ -7,8 +7,8 @@ mod hub;
 use super::motion::{Offsets, Smooth};
 use super::render_view_output_smooth;
 use super::view;
-use super::{hud_row_status, HudDigits, HudStyle};
-use crate::session::{LevelContext, Session, SessionState, MAP_FADE_STEP};
+use super::{HudDigits, HudStyle, hud_row_status};
+use crate::session::{LevelContext, MAP_FADE_STEP, Session, SessionState};
 use sml2_core::video::{OutputMode, PalettePixel};
 use std::error::Error;
 
@@ -27,7 +27,13 @@ impl LevelContext {
     /// Render one level view without advancing the session.
     pub fn render_frame(&self, vw: usize, vh: usize) -> Result<Vec<u8>, Box<dyn Error>> {
         Ok(self
-            .render_output(vw, vh, OutputMode::Grayscale, &Offsets::none(), HudStyle::Classic)?
+            .render_output(
+                vw,
+                vh,
+                OutputMode::Grayscale,
+                &Offsets::none(),
+                HudStyle::Classic,
+            )?
             .0)
     }
 
@@ -128,7 +134,20 @@ impl Session {
         smooth: Smooth,
     ) -> (Vec<u8>, usize) {
         let (mut frame, scale) = self.render_output_base(view, output, smooth);
-        self.decorate_scene_native(&mut frame, view, scale, output);
+        let palette_sources = self
+            .scene_scenery_target()
+            .filter(|target| {
+                super::scene_scenery::has_scene_background(self.scene_scenery(*target))
+            })
+            .map(|_| {
+                if output == OutputMode::PaletteIndices {
+                    frame.clone()
+                } else {
+                    self.render_output_base(view, OutputMode::PaletteIndices, smooth)
+                        .0
+                }
+            });
+        self.decorate_scene_native(&mut frame, view, scale, output, palette_sources.as_deref());
         (frame, scale)
     }
 
@@ -389,7 +408,7 @@ impl Session {
             MapLayer,
         ) -> Result<Vec<P>, String>,
     ) -> Result<Vec<P>, String> {
-        use super::view::{enlarged, letterbox, NATIVE};
+        use super::view::{NATIVE, enlarged, letterbox};
         if !enlarged(view) {
             let mut pixels = render(map_sim, view, MapLayer::Screen)?;
             // Panning hides the counters, as `$3C9F4` does.

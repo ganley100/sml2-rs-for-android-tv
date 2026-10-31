@@ -1,6 +1,6 @@
 //! Expanded hub composition, shared by grayscale, hardware palettes and DX.
 use super::MapLayer;
-use crate::render::{draw_hud_group, view::NATIVE, CORNER_HUD_INSET};
+use crate::render::{CORNER_HUD_INSET, draw_hud_group, view::NATIVE};
 use crate::session::Session;
 use sml2_core::map_sim::MapSim;
 

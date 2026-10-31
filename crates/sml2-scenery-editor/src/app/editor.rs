@@ -1,6 +1,6 @@
 //! Scenery authoring workspace. The live game is used only for playtesting.
 
-use super::{theme, EditorApp, Screen};
+use super::{EditorApp, Screen, theme};
 use eframe::egui::{self, Context, PointerButton, Rect, Ui};
 use sml2_runtime::content::LevelContent;
 use state::{Cell, Tool, Workspace};
@@ -229,7 +229,12 @@ impl EditorApp {
             if ui.button("Play · Enter").clicked() {
                 self.play_editor(ctx);
             }
-            if ui.button("Export level…").clicked() {
+            let export_label = if self.editor.scene.is_some() {
+                "Export scene…"
+            } else {
+                "Export level…"
+            };
+            if ui.button(export_label).clicked() {
                 self.begin_export();
             }
             if ui.button("Back").clicked() {
@@ -350,10 +355,10 @@ impl EditorApp {
                     "· {}, {} · {}",
                     cell.0,
                     cell.1,
-                    if work.outside(cell) {
-                        "Scenery"
+                    if work.scene_border && !work.outside(cell) {
+                        "Scene background"
                     } else {
-                        "Map scenery"
+                        "Scenery"
                     }
                 ));
             } else {

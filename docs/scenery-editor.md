@@ -27,9 +27,10 @@ write your game save.
 
 Select a level or a **Scene surroundings** target. Levels allow cosmetic
 painting inside and outside their map. Scene targets cover zone maps,
-minigames, fixed screens, boss arenas, and the ending. Their magenta boundary
-marks the protected original 160×144 picture: only its surroundings can be
-painted. The scene tile tray contains background swatches, without actors.
+minigames, fixed screens, boss arenas, and the ending. Their 10×9 interior
+shows the original 160×144 background in the tile tray; painting there replaces
+background tiles while actors and the HUD remain in front. Paint outside the
+boundary to decorate the scene's surroundings.
 
 | Action | Control |
 |---|---|

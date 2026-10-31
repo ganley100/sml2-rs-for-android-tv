@@ -1,6 +1,6 @@
 use super::state::*;
 use eframe::egui::{self, Pos2, Rect};
-use sml2_core::level::{LevelLayout, LAYOUT_SIZE};
+use sml2_core::level::{LAYOUT_SIZE, LevelLayout};
 
 mod persistence;
 mod preview;
@@ -186,7 +186,7 @@ fn a_copied_selection_stamps_as_one_undo_step_and_skips_empty_cells() {
 }
 
 #[test]
-fn stamps_never_cover_a_scenes_protected_picture() {
+fn stamps_can_cover_scene_background_and_surroundings() {
     let mut work = workspace();
     work.scene_border = true;
     work.clipboard = Some(Clip {
@@ -197,6 +197,6 @@ fn stamps_never_cover_a_scenes_protected_picture() {
     work.begin((-1, 0), false);
     assert_eq!(
         [(-1, 0), (0, 0), (-1, 1), (0, 1)].map(|cell| work.paint(cell)),
-        [Some(3), None, Some(3), None]
+        [Some(3); 4]
     );
 }

@@ -1,5 +1,5 @@
-//! Authored surrounds for fixed scenes. Coordinates use 16-pixel cells with
-//! the original 160×144 picture at (0, 0); its interior is always protected.
+//! Authored backgrounds and surrounds for fixed scenes. Coordinates use
+//! 16-pixel cells with the original 160×144 picture at (0, 0).
 
 use sml2_core::scenery::SceneryOverlay;
 use std::collections::BTreeMap;
@@ -232,7 +232,7 @@ impl crate::Session {
 
     fn stage_scenery_arena(&mut self, level: u8, gfx: u8) -> Result<(), String> {
         use crate::session::SessionState;
-        use sml2_core::scene::{boss_def_index, boss_def_portable, SceneStep};
+        use sml2_core::scene::{SceneStep, boss_def_index, boss_def_portable};
         let content = self.assets.level(level)?;
         let scripts = self.assets.scripts.scripts();
         let map = content

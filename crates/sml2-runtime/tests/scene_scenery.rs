@@ -101,15 +101,17 @@ fn screen() -> sml2_dx::Screen {
 }
 
 use sml2_core::scenery::{SceneryOverlay, SceneryPaint};
-use sml2_runtime::scene_scenery::{SceneScenery, SceneTarget, SCENE_SWATCHES};
+use sml2_runtime::scene_scenery::{SCENE_SWATCHES, SceneScenery, SceneTarget};
 
 fn surround() -> SceneryOverlay {
     let paints = (-4..14)
         .flat_map(|y| {
-            (-8..18).map(move |x| SceneryPaint {
-                x,
-                y,
-                metatile: ((x + 8 + (y + 4) * 10) % 90) as u8,
+            (-8..18).filter_map(move |x| {
+                (!(0..10).contains(&x) || !(0..9).contains(&y)).then_some(SceneryPaint {
+                    x,
+                    y,
+                    metatile: ((x + 8 + (y + 4) * 10) % 90) as u8,
+                })
             })
         })
         .collect();
@@ -131,15 +133,31 @@ fn all_available_scene_borders_preserve_native_pixels_and_simulation() {
         game.stage_scenery_scene(target)
             .unwrap_or_else(|error| panic!("{target:?}: {error}"));
         assert_eq!(game.scene_scenery_target(), Some(target));
+        game.set_scene_scenery(target, SceneryOverlay::empty())
+            .unwrap();
         let native = game.render_frame((160, 144));
         let baseline = game.render_frame((385, 217));
         let palette = game.scene_palette_frame().unwrap();
         assert_eq!(palette.len(), 160 * 144);
         let saved = game.save_record();
         let frame_n = game.frame_n;
-        game.set_scene_scenery(target, surround()).unwrap();
+        let surround = surround();
+        assert_eq!(surround.get(0, 6), None);
+        game.set_scene_scenery(target, surround).unwrap();
+        for y in 0..9 {
+            for x in 0..10 {
+                assert_eq!(game.scene_scenery(target).get(x, y), None);
+            }
+        }
         let painted = game.render_frame((385, 217));
-        assert_eq!(native, game.render_frame((160, 144)), "{target:?}");
+        assert_eq!(
+            native
+                .iter()
+                .zip(game.render_frame((160, 144)))
+                .position(|(before, after)| before != &after),
+            None,
+            "{target:?}"
+        );
         let (mx, my) = game.scene_border_origin((385, 217));
         for y in 0..144 {
             let at = (my as usize + y) * 385 + mx as usize;
@@ -216,14 +234,50 @@ fn border_pixels_use_background_swatches_in_native_and_dx() {
         }
         for y in 0..144 {
             let at = (my + y) * 384 + mx;
+            let unchanged_from = if y < 16 { at + 16 } else { at };
             assert_eq!(
-                &colored[at..at + 160],
-                &original[at..at + 160],
+                &colored[unchanged_from..at + 160],
+                &original[unchanged_from..at + 160],
                 "{target:?} center row {y}"
             );
         }
         game.set_scene_scenery(target, SceneryOverlay::empty())
             .unwrap();
+    }
+}
+
+#[test]
+fn scene_background_edits_stay_behind_native_boss_sprites() {
+    let mut game = session();
+    let target = SceneTarget::Arena { level: 5, gfx: 0 };
+    game.stage_scenery_scene(target).unwrap();
+    let baseline = game.render_palette_frame((160, 144));
+    let paints = (0..9)
+        .flat_map(|y| {
+            (0..10).map(move |x| SceneryPaint {
+                x,
+                y,
+                metatile: ((x + y * 10 + 1) % 90) as u8,
+            })
+        })
+        .collect();
+    game.set_scene_scenery(
+        target,
+        SceneryOverlay::try_from_paints(paints, SCENE_SWATCHES).unwrap(),
+    )
+    .unwrap();
+    let edited = game.render_palette_frame((160, 144));
+
+    assert!(
+        baseline.iter().zip(&edited).any(|(before, after)| {
+            before.source == sml2_core::video::PaletteSource::Bg && before != after
+        }),
+        "background painting changes pixels in the original scene"
+    );
+    for (before, after) in baseline.iter().zip(&edited) {
+        if before.source != sml2_core::video::PaletteSource::Bg {
+            assert_eq!(before, after, "foreground sprites remain in front");
+        }
     }
 }
 
@@ -286,10 +340,12 @@ fn scene_exports_validate_targets_swatches_and_duplicate_entries() {
     ] {
         assert!(SceneScenery::from_exports(&exports).is_err());
     }
-    assert!(SceneScenery::bundled()
-        .unwrap()
-        .get(SceneTarget::Map(9))
-        .is_empty());
+    assert!(
+        SceneScenery::bundled()
+            .unwrap()
+            .get(SceneTarget::Map(9))
+            .is_empty()
+    );
 }
 
 /// An arena door's scene runs inside the room slide that crossing its
@@ -405,7 +461,7 @@ fn arena_reload_stops_level_scenery_in_native_and_dx_presentation() {
 
 #[test]
 fn modern_arena_hud_gaps_show_scenery_while_ink_and_outlines_survive() {
-    use sml2_runtime::render::{motion::Smooth, HudStyle};
+    use sml2_runtime::render::{HudStyle, motion::Smooth};
     let mut game = session();
     game.hud_style = HudStyle::Modern;
     let mut dx = synthetic_bundle();

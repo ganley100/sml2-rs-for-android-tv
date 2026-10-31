@@ -2,7 +2,7 @@
 
 use super::{EditorApp, Workspace};
 use eframe::egui::{self, Ui};
-use sml2_core::level::{LevelLayout, LAYOUT_SIZE, LAYOUT_WIDTH};
+use sml2_core::level::{LAYOUT_SIZE, LAYOUT_WIDTH, LevelLayout};
 use sml2_core::world::World;
 use sml2_runtime::scene_scenery::SceneTarget;
 

@@ -140,7 +140,7 @@ pub(super) struct Workspace {
     pub layout: LevelLayout,
     pub used: Vec<u8>,
     pub count: usize,
-    /// Scene targets protect their native 10×9 cells from authoring.
+    /// Scene targets have a native 10×9 background surrounded by authored scenery.
     pub scene_border: bool,
     /// The Select tool's last area, `(top-left, bottom-right)`.
     pub selection: Option<(Cell, Cell)>,
@@ -306,9 +306,6 @@ impl Workspace {
             } => {
                 if let Some(cell) = cell {
                     for at in line(last.unwrap_or(cell), cell) {
-                        if self.scene_border && !self.outside(at) {
-                            continue;
-                        }
                         let before = self.paint(at);
                         if before == *value {
                             continue;
@@ -348,9 +345,6 @@ impl Workspace {
                 for y in start.1.min(end.1)..=start.1.max(end.1) {
                     for x in start.0.min(end.0)..=start.0.max(end.0) {
                         let cell = (x, y);
-                        if self.scene_border && !self.outside(cell) {
-                            continue;
-                        }
                         let before = self.paint(cell);
                         if before == Some(value) {
                             continue;
@@ -424,7 +418,7 @@ impl Workspace {
     }
 
     /// Paint the clipboard with its top-left at `at`, as one undo step.
-    /// Empty clip cells and a scene's protected picture are left alone.
+    /// Empty clip cells are left alone.
     pub fn stamp(&mut self, at: Cell) -> bool {
         let Some(clip) = self.clipboard.clone() else {
             return false;
@@ -435,9 +429,6 @@ impl Workspace {
                 continue;
             };
             let cell = (x, y);
-            if self.scene_border && !self.outside(cell) {
-                continue;
-            }
             let before = self.paint(cell);
             if before == Some(id) {
                 continue;

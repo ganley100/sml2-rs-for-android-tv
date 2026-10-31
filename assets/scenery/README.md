@@ -34,9 +34,11 @@ rebuilt level, and the plain `scenery-NN.json` when it loads the original:
 (2, include_str!("../../../../assets/scenery/scenery-02-expanded.json")),
 ```
 
-Scene surroundings (zone maps, minigames, fixed screens, boss arenas, the
-ending) export as names such as `scenery-map-09.json` and register in `BUNDLED`
-in `crates/sml2-runtime/src/scene_scenery.rs`:
+Scene backgrounds and surroundings (zone maps, minigames, fixed screens, boss
+arenas, the ending) export as names such as `scenery-map-09.json` and register
+in `BUNDLED` in `crates/sml2-runtime/src/scene_scenery.rs`. Paints within the
+original 10×9 picture replace background pixels beneath actors and the HUD;
+paints outside it decorate the scene's surroundings:
 
 ```rust
 (SceneTarget::Map(9), include_str!("../../../assets/scenery/scenery-map-09.json")),

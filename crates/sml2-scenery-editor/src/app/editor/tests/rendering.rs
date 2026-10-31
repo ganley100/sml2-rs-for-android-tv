@@ -2,8 +2,8 @@ use crate::app::editor::palette::{dx_tile, native_tile};
 use crate::app::{colorized, tests::app, tests::red_bundle};
 use crate::settings::Filter;
 use eframe::egui::Color32;
-use sml2_core::scenery::{SceneryOverlay, SceneryPaint};
 use sml2_core::camera::Room;
+use sml2_core::scenery::{SceneryOverlay, SceneryPaint};
 use sml2_runtime::render::{motion::Smooth, view};
 use sml2_runtime::session::{Session, SessionState};
 
@@ -17,10 +17,10 @@ fn room(session: &Session) -> Room {
 
 #[test]
 fn enabling_dx_after_opening_the_editor_restores_and_refreshes_its_graphics() {
-    use crate::app::{tests::frame, Screen};
+    use crate::app::{Screen, tests::frame};
     use crate::dx_import::{Event, Worker};
     use sml2_dx::cache::CacheKey;
-    use std::sync::{atomic::AtomicBool, mpsc, Arc};
+    use std::sync::{Arc, atomic::AtomicBool, mpsc};
 
     let (mut app, ctx, path) = app();
     app.settings.filter = Filter::Gray;
@@ -59,13 +59,14 @@ fn enabling_dx_after_opening_the_editor_restores_and_refreshes_its_graphics() {
         .expect("the editor must upload its refreshed DX atlas");
     let eframe::egui::ImageData::Color(image) = &delta.image;
     assert!(image.pixels.iter().all(|pixel| *pixel == Color32::RED));
-    assert!(ctx
-        .tessellate(output.shapes, output.pixels_per_point)
-        .iter()
-        .any(|shape| matches!(
-            &shape.primitive,
-            eframe::egui::epaint::Primitive::Mesh(mesh) if mesh.texture_id == dx_atlas
-        )));
+    assert!(
+        ctx.tessellate(output.shapes, output.pixels_per_point)
+            .iter()
+            .any(|shape| matches!(
+                &shape.primitive,
+                eframe::egui::epaint::Primitive::Mesh(mesh) if mesh.texture_id == dx_atlas
+            ))
+    );
 
     app.settings.dx_mode = false;
     let output = frame(&mut app, &ctx, vec![]);
@@ -78,10 +79,12 @@ fn enabling_dx_after_opening_the_editor_restores_and_refreshes_its_graphics() {
         .find(|(id, _)| *id == native_atlas)
         .unwrap();
     let eframe::egui::ImageData::Color(image) = &delta.image;
-    assert!(image
-        .pixels
-        .iter()
-        .all(|pixel| pixel.r() == pixel.g() && pixel.g() == pixel.b()));
+    assert!(
+        image
+            .pixels
+            .iter()
+            .all(|pixel| pixel.r() == pixel.g() && pixel.g() == pixel.b())
+    );
     std::fs::remove_dir_all(path).ok();
 }
 

@@ -1,5 +1,5 @@
 use crate::app::editor::state::Tool;
-use crate::app::{tests::app, EditorApp, Screen};
+use crate::app::{EditorApp, Screen, tests::app};
 use eframe::egui::{self, Context, Event, Key, Modifiers, PointerButton, Pos2, Rect};
 
 pub(in crate::app) fn frame(
@@ -430,11 +430,12 @@ fn idle_editor_reuses_chunks_and_skips_hidden_game_uploads() {
     let game_texture = app.texture.id();
     let idle = frame(&mut app, &ctx, size, vec![]);
     assert_eq!(app.editor.canvas_cache.builds, builds);
-    assert!(idle
-        .textures_delta
-        .set
-        .iter()
-        .all(|(id, _)| *id != game_texture));
+    assert!(
+        idle.textures_delta
+            .set
+            .iter()
+            .all(|(id, _)| *id != game_texture)
+    );
     assert!(
         idle.viewport_output[&egui::ViewportId::ROOT].repaint_delay
             > std::time::Duration::from_millis(8)

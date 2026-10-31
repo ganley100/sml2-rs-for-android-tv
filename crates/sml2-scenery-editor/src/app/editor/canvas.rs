@@ -1,7 +1,7 @@
 //! Signed world-space canvas; gameplay zoom and camera never participate.
 
-use super::state::{span, Cell, Gesture, Tool};
 use super::Editor;
+use super::state::{Cell, Gesture, Tool, span};
 use crate::app::theme;
 use eframe::egui::{self, Color32, PointerButton, Pos2, Rect, Sense, Stroke, StrokeKind, Ui};
 use std::{collections::HashMap, sync::Arc};
@@ -266,7 +266,11 @@ impl Editor {
             painter.text(
                 rect.left_top() + egui::vec2(12.0, 12.0),
                 egui::Align2::LEFT_TOP,
-                "SCENERY · paint here",
+                if work.scene_border {
+                    "SCENE · background + surroundings"
+                } else {
+                    "SCENERY · paint here"
+                },
                 egui::FontId::proportional(12.0),
                 ui.visuals().text_color(),
             );
@@ -292,18 +296,14 @@ impl Editor {
                 for ((dx, dy), id) in clip.tiles() {
                     let cell = (at.0.saturating_add(dx), at.1.saturating_add(dy));
                     last = (last.0.max(cell.0), last.1.max(cell.1));
-                    if !work.scene_border || work.outside(cell) {
-                        draw_tile(id, cell_rect(cell), Color32::from_white_alpha(160));
-                    }
+                    draw_tile(id, cell_rect(cell), Color32::from_white_alpha(160));
                 }
                 outline((at, last), theme::HIGHLIGHT);
             }
         } else if let Some(Gesture::Rectangle { start, end, value }) = &work.gesture {
             for y in start.1.min(end.1)..=start.1.max(end.1) {
                 for x in start.0.min(end.0)..=start.0.max(end.0) {
-                    if !work.scene_border || work.outside((x, y)) {
-                        draw_tile(*value, cell_rect((x, y)), Color32::from_white_alpha(140));
-                    }
+                    draw_tile(*value, cell_rect((x, y)), Color32::from_white_alpha(140));
                 }
             }
             let outline = cell_rect((start.0.min(end.0), start.1.min(end.1)))
@@ -324,11 +324,7 @@ impl Editor {
                 } else {
                     theme::HIGHLIGHT
                 };
-                if !erasing
-                    && work.tool != Tool::Eyedropper
-                    && work.tool != Tool::Select
-                    && (!work.scene_border || work.outside(cell))
-                {
+                if !erasing && work.tool != Tool::Eyedropper && work.tool != Tool::Select {
                     draw_tile(work.metatile, at, Color32::from_white_alpha(140));
                 }
                 if erasing {

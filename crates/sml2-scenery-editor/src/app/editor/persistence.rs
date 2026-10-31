@@ -73,7 +73,7 @@ impl EditorApp {
                                 .unwrap_or_default()
                         }
                     })
-                    .unwrap_or_default())
+                    .unwrap_or_default());
             }
             Err(error) => return Err(format!("{}: {error}", path.display())),
         };
