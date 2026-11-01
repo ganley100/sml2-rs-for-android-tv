@@ -69,10 +69,11 @@ pub enum Action {
     Select,
     /// Holds Down while Mario is airborne, so the spin jump needs no D-pad.
     Spin,
+    ToggleToolbar,
 }
 
 impl Action {
-    pub const ALL: [Self; 9] = [
+    pub const ALL: [Self; 10] = [
         Self::Right,
         Self::Left,
         Self::Up,
@@ -82,6 +83,7 @@ impl Action {
         Self::Start,
         Self::Select,
         Self::Spin,
+        Self::ToggleToolbar,
     ];
     pub fn label(self) -> &'static str {
         match self {
@@ -94,16 +96,17 @@ impl Action {
             Self::Start => "Game Start",
             Self::Select => "Game Select",
             Self::Spin => "Spin jump",
+            Self::ToggleToolbar => "Toggle toolbar",
         }
     }
     /// Actions the original controls already cover may be left unbound.
     pub fn optional(self) -> bool {
-        self == Self::Spin
+        matches!(self, Self::Spin | Self::ToggleToolbar)
     }
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
-pub struct Bindings(pub [Vec<Button>; 9]);
+pub struct Bindings(pub [Vec<Button>; 10]);
 
 impl Default for Bindings {
     fn default() -> Self {
@@ -124,6 +127,7 @@ impl Default for Bindings {
             row(&["Enter"], &[LeftThumb]),
             row(&["Backspace"], &[Select]),
             row(&["C"], &[LeftTrigger, RightTrigger]),
+            row(&[], &[]),
         ])
     }
 }

@@ -153,8 +153,8 @@ fn scrolled_settings_keep_tabs_and_back_reachable_by_mouse_and_controller() {
             text_rect(&output, "Spin jump");
             assert_eq!(text_rect(&output, "DISPLAY"), display_tab);
             assert_eq!(text_rect(&output, "Back"), back);
-            // Reset controls follows the bindings, then Back.
-            for _ in 0..2 {
+            // The toolbar binding and Reset controls follow, then Back.
+            for _ in 0..3 {
                 app.input
                     .event(Button::Pad(crate::input::PadButton::Down), true);
                 frame(&mut app, &ctx, size, vec![]);

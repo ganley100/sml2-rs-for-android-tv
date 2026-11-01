@@ -90,7 +90,7 @@ base assets and integrity before use.
 | Fullscreen | F11 | Settings |
 | Output scale | + / - | Settings |
 | Display palette | F4 | Settings |
-| Toolbar | F10 | Mouse |
+| Toolbar | F10 | Optional binding in Settings → Controls |
 | Debug inspector / pause / one tick | F1 / F2 / F3 | Debug panel |
 
 The desktop menu, focus loss, minimization and selected-controller disconnect

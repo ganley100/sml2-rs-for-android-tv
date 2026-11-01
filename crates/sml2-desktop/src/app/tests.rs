@@ -817,6 +817,32 @@ fn normal_play_ignores_local_editor_drafts() {
 }
 
 #[test]
+fn bound_controller_button_toggles_toolbar_once_per_press_and_persists() {
+    let (mut app, ctx, path) = app();
+    let button = Button::Pad(crate::input::PadButton::RightThumb);
+    app.settings
+        .bindings
+        .rebind(Action::ToggleToolbar, button.clone())
+        .unwrap();
+    frame(&mut app, &ctx, vec![]);
+    app.input.event(button.clone(), true);
+    frame(&mut app, &ctx, vec![]);
+    assert!(!app.settings.show_toolbar);
+    frame(&mut app, &ctx, vec![]);
+    assert!(!app.settings.show_toolbar);
+    app.input.event(button.clone(), false);
+    app.input.event(button, true);
+    frame(&mut app, &ctx, vec![]);
+    assert!(app.settings.show_toolbar);
+    let saved = Settings::load(&path.join("settings.json")).unwrap();
+    assert!(saved.show_toolbar);
+    assert_eq!(
+        saved.bindings.0[Action::ToggleToolbar as usize],
+        app.settings.bindings.0[Action::ToggleToolbar as usize]
+    );
+}
+
+#[test]
 fn f10_hides_the_toolbar_and_its_tabs_open_the_matching_settings_pages() {
     let (mut app, ctx, path) = app();
     app.screen = Screen::Game;

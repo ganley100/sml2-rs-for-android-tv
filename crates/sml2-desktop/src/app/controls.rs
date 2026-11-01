@@ -136,7 +136,11 @@ impl DesktopApp {
         if self.input.take_press(&Button::key("F1")) {
             self.debug = !self.debug;
         }
-        if self.input.take_press(&Button::key("F10")) {
+        let toolbar_binding = self.settings.bindings.0
+            [crate::input::Action::ToggleToolbar as usize]
+            .iter()
+            .any(|button| self.input.take_press(button));
+        if self.input.take_press(&Button::key("F10")) || toolbar_binding {
             self.settings.show_toolbar = !self.settings.show_toolbar;
             self.persist();
         }

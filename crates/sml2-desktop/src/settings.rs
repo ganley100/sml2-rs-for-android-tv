@@ -294,6 +294,17 @@ mod tests {
     }
 
     #[test]
+    fn nine_action_bindings_gain_an_unbound_toolbar_action() {
+        let directory = tempfile::tempdir().unwrap();
+        let path = directory.path().join("settings.json");
+        let mut value = serde_json::to_value(Settings::default()).unwrap();
+        value["bindings"].as_array_mut().unwrap().truncate(9);
+        fs::write(&path, serde_json::to_vec(&value).unwrap()).unwrap();
+        let settings = Settings::load(&path).unwrap();
+        assert!(settings.bindings.0[crate::input::Action::ToggleToolbar as usize].is_empty());
+    }
+
+    #[test]
     fn eight_action_bindings_gain_spin_without_duplicating_buttons() {
         let path =
             std::env::temp_dir().join(format!("sml2_settings_spin_{}.json", std::process::id()));
