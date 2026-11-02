@@ -9,6 +9,9 @@ fn framework_snapshot_maps_physical_buttons_and_axes() {
         unsafe {
             let controller = GCController::controllerWithExtendedGamepad();
             let pad = controller.extendedGamepad().unwrap();
+            let menu = pad
+                .respondsToSelector(sel!(buttonMenu))
+                .then(|| pad.buttonMenu());
             let expected = [
                 Some(pad.buttonA()),
                 Some(pad.buttonB()),
@@ -18,7 +21,7 @@ fn framework_snapshot_maps_physical_buttons_and_axes() {
                 Some(pad.dpad().down()),
                 Some(pad.dpad().left()),
                 Some(pad.dpad().right()),
-                Some(pad.buttonMenu()),
+                menu,
                 pad.buttonOptions(),
                 pad.leftThumbstickButton(),
                 pad.rightThumbstickButton(),
@@ -29,11 +32,20 @@ fn framework_snapshot_maps_physical_buttons_and_axes() {
             ];
             for (index, button) in expected.into_iter().enumerate() {
                 if let Some(button) = button {
-                    button.setValue(1.);
+                    match index {
+                        4 => pad.dpad().setValueForXAxis_yAxis(0., 1.),
+                        5 => pad.dpad().setValueForXAxis_yAxis(0., -1.),
+                        6 => pad.dpad().setValueForXAxis_yAxis(-1., 0.),
+                        7 => pad.dpad().setValueForXAxis_yAxis(1., 0.),
+                        _ => button.setValue(1.),
+                    }
                     let mut wanted = [false; 16];
                     wanted[index] = true;
                     assert_eq!(snapshot(&pad).buttons, wanted, "input {index}");
-                    button.setValue(0.);
+                    match index {
+                        4..=7 => pad.dpad().setValueForXAxis_yAxis(0., 0.),
+                        _ => button.setValue(0.),
+                    }
                 } else {
                     assert!(!snapshot(&pad).buttons[index]);
                 }
