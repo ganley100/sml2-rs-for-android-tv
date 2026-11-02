@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [v0.2.1] - 2026-11-02
+
+### Added
+- The top toolbar can be toggled with a controller binding from Settings →
+  Controls.
+
+### Fixed
+- macOS now uses native GameController input, fixing Bluetooth controller
+  detection and input after reconnecting.
+
+
 ## [v0.2.0] - 2026-11-01
 
 ### Added

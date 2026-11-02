@@ -11,4 +11,4 @@ members = [
 default-members = ["crates/sml2-extract", "crates/sml2-core", "crates/sml2-runtime"]
 
 [workspace.package]
-version = "0.2.0"
+version = "0.2.1"
