@@ -83,7 +83,8 @@ jobs:
         run: cargo build --locked --release -p sml2-desktop --bin sml2
 
       - name: Controller input tests
-        run: cargo test --locked -p sml2-desktop --lib controllers::
+        run: |
+          cargo test --locked -p sml2-desktop --lib controllers::
 
       - name: Desktop policy tests
         run: cargo test --locked -p sml2-desktop --no-default-features --lib
