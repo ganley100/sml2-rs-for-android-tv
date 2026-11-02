@@ -81,9 +81,7 @@ color change can land a frame off. See
 | Cycle display palettes | F4 | Settings menu |
 | Toggle top toolbar | F10 | Optional binding |
 
-Change bindings in **Settings → Controls**. To toggle the toolbar with a
-controller, select **Toggle toolbar** and press the button you want to use.
-It is unbound by default. See the
+Change bindings in **Settings → Controls**. See the
 [desktop guide](docs/desktop.md) for setup help and save locations.
 
 ## How it was made
