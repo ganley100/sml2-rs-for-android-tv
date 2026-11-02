@@ -11,8 +11,8 @@ Read **`ORCHESTRATION.md`** and **`PORTING.md`** for the full loop. Summary:
 
 - **One ticket per session turn:** one handler `0xADDR` OR one `PORT_QUEUE.json` id.
 - **Handlers:** `python3 tools/dispatch_prompt.py --addr 0x…` → give that text to a strong model; do not port handlers yourself.
-- **No:** new captures, `notes/` essays, loading `PORT_QUEUE.done.json` or `captures/*.json`.
+- **No:** new captures, loading `PORT_QUEUE.done.json` or `captures/*.json`.
 - **Close queue items:** `python3 tools/queue_done.py <id>` after tests pass.
 - **Sweep:** `bash captures/sweep.sh 2>&1 | tail -n 25` once per work package, not per handler.
 
-Hermes copy-paste prompts: `hermes/README.md`.
+Role prompts: `docs/agent-prompts.md`.

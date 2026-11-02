@@ -12,4 +12,4 @@ When editing under `objects/`, you are implementing **one** handler from `tasks/
 - Add `#[test]` with in-memory slot bytes; run `cargo test -p sml2-core`.
 - Do not refactor unrelated handlers or read the whole `objects/` tree unless explicitly scoped under `PORTING.md`.
 
-See `hermes/worker-handler.system.md` and `PORTING.md`.
+See `docs/agent-prompts.md` and `PORTING.md`.

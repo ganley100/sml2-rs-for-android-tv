@@ -63,5 +63,5 @@ Reject overbroad diffs, incomplete slices, raw-slot domain logic or new captures
 python3 -c 'import json; print([e["id"] for e in json.load(open("PORT_QUEUE.json"))["queue"]])'
 ```
 
-Copy-paste system prompts: [Hermes](hermes/README.md). Cursor rules are in
+Copy-paste role prompts: [Agent prompts](docs/agent-prompts.md). Cursor rules are in
 `.cursor/rules/`; do not duplicate the workflow into session journals or plans.

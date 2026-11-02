@@ -14,7 +14,7 @@ Native Rust port of Super Mario Land 2, verified against `../sml2decomp/` and `b
 | [`PORT_QUEUE.json`](PORT_QUEUE.json) | **Pending items only** — `python3 -c 'import json;print(json.load(open("PORT_QUEUE.json"))["queue"])'` |
 | [`PORT_QUEUE.done.json`](PORT_QUEUE.done.json) | Archived completed items (ignore unless auditing history) |
 | [`captures/README.md`](captures/README.md) | Frozen replay corpus (read-only) |
-| [`hermes/README.md`](hermes/README.md) | Copy-paste Hermes supervisor/Porter system prompts |
+| [`docs/agent-prompts.md`](docs/agent-prompts.md) | Copy-paste supervisor and Porter system prompts |
 
 ## Quick gate
 
@@ -42,3 +42,17 @@ python3 -c 'import json;print([e["id"] for e in json.load(open("PORT_QUEUE.json"
 
 Create a focused commit after each completed, verified work step. Stage only
 files belonging to that step and preserve unrelated local changes.
+
+## Agent skills
+
+### Issue tracker
+
+Issues are tracked in this repository's GitHub Issues. See `docs/agents/issue-tracker.md`.
+
+### Triage labels
+
+Use the default canonical triage labels. See `docs/agents/triage-labels.md`.
+
+### Domain docs
+
+Use the single-context domain-doc layout. See `docs/agents/domain.md`.

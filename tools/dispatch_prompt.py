@@ -94,7 +94,7 @@ Touch ONLY:
   - {registration.relative_to(ROOT)} (module registrations only, if new)
 
 Read the supplied brief's exact existing helper contracts when listed.
-Do NOT read: DESIGN.md, PORT_QUEUE, captures/, notes/, whole main.asm.
+Do NOT read: DESIGN.md, PORT_QUEUE, captures/, whole main.asm.
 Rules: PORTING.md. Keep a handler module below approximately 400 lines;
 choose a new focused sibling module when the existing family exceeds that size.
 Domain logic uses typed Actor fields, states and shared native behavior.

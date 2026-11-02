@@ -7,7 +7,7 @@
 | **PORTING.md** (this file) | How to work — one unit of work, verification, models, forbidden moves |
 | **DESIGN.md** | Architecture and long-term constraints (texture packs, 60 Hz sim, seams) |
 | **PORT_QUEUE.json** | **Pending work only** (query the live count). Done history: `PORT_QUEUE.done.json` (do not load) |
-| **notes/** | Retired (see `notes/README.md`) — do not add files here |
+| **Working notes** | Do not create session journals or long-form research files. Generate per-handler ASM slices locally with `tools/handler_task.py`; they are not committed. ROM truth is `../sml2decomp/` + `baserom.gb`; verified semantics belong in Rust module headers and `#[test]` assertions. |
 | **captures/** | Frozen replay regression only — read-only |
 
 Sibling ROM truth: `../sml2decomp/` + `baserom.gb` under that tree (`SML2_DECOMP_ROOT`).
@@ -161,4 +161,4 @@ Python `json.load` before write. Query with:
 python3 -c 'import json;print([e["id"] for e in json.load(open("PORT_QUEUE.json"))["queue"]])'
 ```
 
-When closing an item: `python3 tools/queue_done.py <id>` (moves to `PORT_QUEUE.done.json`). **Do not add `note` fields.**
+When closing an item: `python3 tools/queue_done.py <id>` (moves to `PORT_QUEUE.done.json`). **Do not add `note` fields; use the ticket title and `asm_refs`.**
