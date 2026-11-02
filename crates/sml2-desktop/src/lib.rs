@@ -9,7 +9,7 @@ pub mod vanilla_import;
 
 #[cfg(feature = "native")]
 pub mod app;
-#[cfg(feature = "native")]
+#[cfg(any(feature = "native", test))]
 pub mod controllers;
 #[cfg(feature = "native")]
 pub mod game;

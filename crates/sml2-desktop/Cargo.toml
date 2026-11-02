@@ -5,7 +5,7 @@ edition = "2021"
 
 [features]
 default = ["native"]
-native = ["dep:eframe", "dep:wgpu", "dep:gilrs", "dep:png", "dep:rfd"]
+native = ["dep:eframe", "dep:wgpu", "dep:gilrs", "dep:png", "dep:rfd", "dep:objc2", "dep:objc2-foundation", "dep:objc2-game-controller", "dep:block2"]
 
 [[bin]]
 name = "sml2"
@@ -23,8 +23,16 @@ serde_json = "1"
 directories = "6"
 eframe = { version = "0.33", default-features = false, features = ["default_fonts", "wgpu", "wayland", "x11"], optional = true }
 wgpu = { version = "27", default-features = false, features = ["vulkan", "gles", "dx12", "metal", "wgsl"], optional = true }
-gilrs = { version = "0.11", optional = true }
 png = { version = "0.17", optional = true }
+
+[target.'cfg(not(target_os = "macos"))'.dependencies]
+gilrs = { version = "0.11", optional = true }
+
+[target.'cfg(target_os = "macos")'.dependencies]
+objc2 = { version = "0.6", optional = true }
+objc2-foundation = { version = "0.3", optional = true, default-features = false, features = ["std", "NSArray", "NSString", "NSObject", "NSNotification", "NSOperation", "block2"] }
+objc2-game-controller = { version = "0.3", optional = true, default-features = false, features = ["std", "GCController", "GCDevice", "GCPhysicalInputProfile", "GCExtendedGamepad", "GCControllerElement", "GCControllerButtonInput", "GCControllerDirectionPad", "GCControllerAxisInput", "block2"] }
+block2 = { version = "0.6", optional = true }
 
 [target.'cfg(windows)'.dependencies]
 raw-window-handle = "0.6"

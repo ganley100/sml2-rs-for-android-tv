@@ -103,6 +103,13 @@ switches pages; left/right changes choices, Enter/click advances them. Escape
 cancels binding capture; conflicts/reserved shortcuts are reported. Bindings use
 physical key positions; changing one device retains the other's bindings.
 
+macOS reads extended gamepads through Apple's GameController framework;
+Windows and Linux use gilrs. USB and Bluetooth use the same bindings. Select
+the device and stick dead zone in Settings → Controls. macOS device preferences
+identify a controller model, while the active connection distinguishes identical
+pads. An older saved device preference falls back to a connected controller;
+selecting a device saves the new preference without resetting bindings.
+
 Menus preserve the last displayed frame underneath. **Fit to window** adjusts
 output scale without changing the logical view; **Integer scaling** is on by
 default. Disabling Fit exposes fixed 1x–8x presets; disabling Integer allows
@@ -160,3 +167,19 @@ CPU frame; mismatch/write failures return errors. Without screenshot, the smoke
 flag only closes after that many UI updates. Linux/Wayland rendering has been
 checked; physical controller hotplug and Windows/macOS still need hands-on
 validation. Core tests/replays do not establish GPU or full-game pixel parity.
+
+For the macOS Bluetooth input change, physical DualSense validation is still
+required before claiming the reported issue is resolved. Test the packaged
+executable with Bluetooth connected before launch, USB connected before launch,
+USB unplugged during play followed by Bluetooth reconnect, and Bluetooth
+disconnect/reconnect. Check movement, face buttons, shoulders/triggers, stick
+clicks, Menu/Options, menu navigation, rebinding, focus loss/recovery, and no stuck
+inputs. Disconnecting the selected pad should open the desktop menu; the
+reconnected pad should control that menu and resumed gameplay. Also test device
+cycling with two pads, including two of the same model when available.
+
+`cargo test -p sml2-desktop --lib controllers::` runs portable input policy tests
+and, on macOS, tests using Apple's writable snapshot controllers. Snapshot tests
+verify API mapping and callback handling without paired hardware; they do not
+validate Bluetooth delivery or physical hotplug. The release build matrix runs
+these tests on macOS, Windows, and Linux.

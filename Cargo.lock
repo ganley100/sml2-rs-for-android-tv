@@ -2403,8 +2403,20 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "e3e0adef53c21f888deb4fa59fc59f7eb17404926ee8a6f59f5df0fd7f9f3272"
 dependencies = [
  "bitflags 2.13.2",
+ "block2 0.6.2",
  "objc2 0.6.5",
  "objc2-core-foundation",
+]
+
+[[package]]
+name = "objc2-game-controller"
+version = "0.3.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "1962c1882c5abcedb18e5f01acffeaad7b3cbd0a9d4cd8f5ca259ba8a64cb9a3"
+dependencies = [
+ "block2 0.6.2",
+ "objc2 0.6.5",
+ "objc2-foundation 0.3.2",
 ]
 
 [[package]]
@@ -3290,9 +3302,13 @@ dependencies = [
 name = "sml2-desktop"
 version = "0.2.0"
 dependencies = [
+ "block2 0.6.2",
  "directories",
  "eframe",
  "gilrs",
+ "objc2 0.6.5",
+ "objc2-foundation 0.3.2",
+ "objc2-game-controller",
  "png 0.17.16",
  "raw-window-handle",
  "rfd",
