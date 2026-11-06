@@ -56,6 +56,39 @@ impl Button {
     }
 }
 
+/// Android TV: the patched winit (`tools/android/patches`) delivers controller
+/// buttons as F13-F24, the D-pad hat as F25-F28 and the left stick as F29-F32;
+/// the remote's Back arrives as `BrowserBack`. Turns a key name into the button
+/// the bindings and menus expect.
+pub fn android_button(name: &str) -> Button {
+    use PadButton::*;
+    let pad = match name {
+        "F13" => South,
+        "F14" => East,
+        "F15" => West,
+        "F16" => North,
+        "F17" => LeftShoulder,
+        "F18" => RightShoulder,
+        "F19" => LeftTrigger,
+        "F20" => RightTrigger,
+        "F21" => LeftThumb,
+        "F22" => RightThumb,
+        "F23" => Start,
+        "F24" => Select,
+        "F25" => Up,
+        "F26" => Down,
+        "F27" => Left,
+        "F28" => Right,
+        "F29" => StickUp,
+        "F30" => StickDown,
+        "F31" => StickLeft,
+        "F32" => StickRight,
+        "BrowserBack" => return Button::key("Escape"),
+        _ => return Button::key(name),
+    };
+    Button::Pad(pad)
+}
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 #[repr(usize)]
 pub enum Action {
@@ -286,6 +319,26 @@ impl StickAxis {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn android_keys_reach_the_default_pad_bindings() {
+        let bindings = Bindings::default();
+        let bound = |action: Action, name: &str| {
+            bindings.0[action as usize].contains(&android_button(name))
+        };
+        assert!(bound(Action::Jump, "F13"));
+        assert!(bound(Action::Run, "F14"));
+        assert!(bound(Action::Run, "F15"));
+        assert!(bound(Action::Start, "F21"));
+        assert!(bound(Action::Select, "F24"));
+        assert!(bound(Action::Spin, "F19"));
+        assert!(bound(Action::Up, "F25"));
+        assert!(bound(Action::Left, "F31"));
+        assert!(bound(Action::Right, "ArrowRight"));
+        assert_eq!(android_button("F23"), Button::Pad(PadButton::Start));
+        assert_eq!(android_button("BrowserBack"), Button::key("Escape"));
+        assert_eq!(android_button("Enter"), Button::key("Enter"));
+    }
     #[test]
     fn keyboard_and_controller_defaults_reach_the_same_native_joypad_bytes() {
         let mut keyboard = InputState::default();

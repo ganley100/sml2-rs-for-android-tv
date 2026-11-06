@@ -5,6 +5,7 @@ use crate::divider_clock::VirtualDividerClock;
 use crate::persistence::atomic_write;
 use crate::play_tape::PlayTape;
 use crate::session::{Boot, FrameInput, Session, SessionAssets, StepOutcome};
+#[cfg(not(target_os = "android"))]
 use minifb::{Key, Window, WindowOptions};
 use sml2_core::{
     audio::apu::Apu,
@@ -239,6 +240,7 @@ impl SessionRunner {
     }
 
     /// Run the interactive session loop in a window.
+    #[cfg(not(target_os = "android"))]
     pub fn run_window(&mut self, tape: Option<PlayTape>) -> Result<(), Box<dyn Error>> {
         let mut window = Window::new(
             "sml2 — overworld session (arrows move, Z jump/A, X run/B, ENTER start/pause, Q quits)",

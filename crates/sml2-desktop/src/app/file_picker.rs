@@ -5,6 +5,22 @@ use std::{
     path::{Path, PathBuf},
 };
 
+/// Where the in-app browser opens. Android starts in shared storage, falling back
+/// to the app's own external folder when storage access is not granted.
+pub fn default_start(fallback: &Path) -> PathBuf {
+    #[cfg(target_os = "android")]
+    {
+        let external = std::env::var_os("SML2_EXTERNAL_DIR").map(PathBuf::from);
+        let shared = ["/storage/emulated/0/Download", "/storage/emulated/0"]
+            .into_iter()
+            .map(PathBuf::from);
+        if let Some(dir) = shared.chain(external).find(|dir| fs::read_dir(dir).is_ok()) {
+            return dir;
+        }
+    }
+    std::env::current_dir().unwrap_or_else(|_| fallback.to_owned())
+}
+
 #[derive(Debug, PartialEq, Eq)]
 pub enum PickerResult {
     Selected(PathBuf),

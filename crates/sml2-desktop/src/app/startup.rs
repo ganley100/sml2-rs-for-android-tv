@@ -48,6 +48,12 @@ impl Options {
 }
 
 pub fn run(options: Options) -> Result<(), String> {
+    run_with(options, eframe::NativeOptions::default())
+}
+
+/// Runs the app with host-supplied eframe options; Android passes its activity here.
+/// The window and renderer fields are always set from `options` and the settings.
+pub fn run_with(options: Options, native: eframe::NativeOptions) -> Result<(), String> {
     let loaded = Settings::load(&options.paths.settings);
     let error = loaded.as_ref().err().cloned();
     let mut settings = loaded.unwrap_or_default();
@@ -79,7 +85,7 @@ pub fn run(options: Options) -> Result<(), String> {
         eframe::NativeOptions {
             viewport,
             renderer: eframe::Renderer::Wgpu,
-            ..Default::default()
+            ..native
         },
         Box::new(move |cc| {
             #[cfg(windows)]

@@ -2,8 +2,9 @@
 //!
 //! The sink is platform-specific: Linux shells out to PulseAudio (`pacat`) or
 //! PipeWire (`pw-play`) and feeds raw stereo float32 PCM through stdin; Windows
-//! and macOS open the default device through `cpal` (WASAPI, CoreAudio). Both
-//! backends accept the same interleaved stereo `f32` frames from the APU.
+//! and macOS open the default device through `cpal` (WASAPI, CoreAudio);
+//! Android opens an AAudio stream. All backends accept the same interleaved
+//! stereo `f32` frames from the APU.
 
 /// Stereo sample frames per tick for the live frontends' fixed 60 Hz simulation.
 pub const LIVE_FRAME_SAMPLES: usize = 44_100 / 60;
@@ -18,10 +19,15 @@ pub(crate) fn limit(sample: f32) -> f32 {
 #[cfg(not(any(windows, target_os = "macos")))]
 mod queue;
 
-#[cfg(not(any(windows, target_os = "macos")))]
+#[cfg(not(any(windows, target_os = "macos", target_os = "android")))]
 mod pipe;
-#[cfg(not(any(windows, target_os = "macos")))]
+#[cfg(not(any(windows, target_os = "macos", target_os = "android")))]
 pub use pipe::AudioOutput;
+
+#[cfg(target_os = "android")]
+mod aaudio;
+#[cfg(target_os = "android")]
+pub use aaudio::AudioOutput;
 
 #[cfg(any(windows, target_os = "macos"))]
 mod device;

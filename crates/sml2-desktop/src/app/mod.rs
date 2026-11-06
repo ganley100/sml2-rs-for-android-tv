@@ -33,7 +33,7 @@ mod pause_backdrop;
 mod pointer;
 mod startup;
 pub(crate) use crate::ui::{colorized, theme};
-pub use startup::{run, Options};
+pub use startup::{run, run_with, Options};
 #[cfg(test)]
 mod dx_tests;
 #[cfg(test)]

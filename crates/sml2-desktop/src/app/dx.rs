@@ -1,4 +1,4 @@
-use super::file_picker::{FilePicker, InputKind, PickerResult};
+use super::file_picker::{self, FilePicker, InputKind, PickerResult};
 use super::theme;
 use super::DesktopApp;
 use crate::dx_import::{self, Event, Worker};
@@ -67,8 +67,7 @@ impl DesktopApp {
                         self.dx_message =
                             "No file selected in the system dialog. Choose a file in the browser or cancel."
                                 .into();
-                        let start =
-                            std::env::current_dir().unwrap_or_else(|_| self.options.assets.clone());
+                        let start = file_picker::default_start(&self.options.assets);
                         self.dx_picker = Some(match self.library_pick {
                             Some(super::LibraryPick::Rom) => {
                                 FilePicker::for_kind(start, InputKind::Original)
@@ -171,16 +170,26 @@ impl DesktopApp {
         };
         self.library_pick = Some(kind);
         self.dx_restore = false;
-        self.dx_worker = Some(Worker::choose_file(move || {
-            // Unit tests drive this path; they must never open a native dialog.
-            if cfg!(test) {
-                return None;
-            }
-            rfd::FileDialog::new()
-                .set_title(input_kind.title())
-                .add_filter("Supported files", input_kind.extensions())
-                .pick_file()
-        }));
+        // Android has no native file dialog; open the in-app browser directly.
+        #[cfg(target_os = "android")]
+        {
+            self.dx_message.clear();
+            let start = file_picker::default_start(&self.options.assets);
+            self.dx_picker = Some(FilePicker::for_kind(start, input_kind));
+        }
+        #[cfg(not(target_os = "android"))]
+        {
+            self.dx_worker = Some(Worker::choose_file(move || {
+                // Unit tests drive this path; they must never open a native dialog.
+                if cfg!(test) {
+                    return None;
+                }
+                rfd::FileDialog::new()
+                    .set_title(input_kind.title())
+                    .add_filter("Supported files", input_kind.extensions())
+                    .pick_file()
+            }));
+        }
     }
 
     /// The in-app ROM browser, drawn over whichever screen is showing.

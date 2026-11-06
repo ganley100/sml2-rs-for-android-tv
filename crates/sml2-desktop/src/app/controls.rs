@@ -17,10 +17,13 @@ impl DesktopApp {
                     ..
                 } => {
                     if !repeat || !pressed {
-                        self.input.event(
-                            Button::key(&format!("{:?}", physical_key.unwrap_or(*key))),
-                            *pressed,
-                        );
+                        let name = format!("{:?}", physical_key.unwrap_or(*key));
+                        let button = if cfg!(target_os = "android") {
+                            crate::input::android_button(&name)
+                        } else {
+                            Button::key(&name)
+                        };
+                        self.input.event(button, *pressed);
                     }
                 }
                 egui::Event::WindowFocused(false) => self.input.clear(),
