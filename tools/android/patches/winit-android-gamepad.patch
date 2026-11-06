@@ -1,0 +1,157 @@
+diff -ru a/src/platform_impl/android/keycodes.rs b/src/platform_impl/android/keycodes.rs
+--- a/src/platform_impl/android/keycodes.rs	2026-11-06 20:49:28.403864997 +0000
++++ b/src/platform_impl/android/keycodes.rs	2026-11-06 20:49:28.429679507 +0000
+@@ -153,6 +153,21 @@
+         Keycode::Sleep => KeyCode::Sleep, // what about SoftSleep?
+         Keycode::Wakeup => KeyCode::WakeUp,
+ 
++        // sml2-android: game controller buttons get otherwise-unused function
++        // keys so they reach egui; the app maps F13-F24 back to pad buttons.
++        Keycode::ButtonA => KeyCode::F13,
++        Keycode::ButtonB => KeyCode::F14,
++        Keycode::ButtonX => KeyCode::F15,
++        Keycode::ButtonY => KeyCode::F16,
++        Keycode::ButtonL1 => KeyCode::F17,
++        Keycode::ButtonR1 => KeyCode::F18,
++        Keycode::ButtonL2 => KeyCode::F19,
++        Keycode::ButtonR2 => KeyCode::F20,
++        Keycode::ButtonThumbl => KeyCode::F21,
++        Keycode::ButtonThumbr => KeyCode::F22,
++        Keycode::ButtonStart | Keycode::ButtonMode => KeyCode::F23,
++        Keycode::ButtonSelect => KeyCode::F24,
++
+         keycode => return PhysicalKey::Unidentified(NativeKeyCode::Android(keycode.into())),
+     })
+ }
+diff -ru a/src/platform_impl/android/mod.rs b/src/platform_impl/android/mod.rs
+--- a/src/platform_impl/android/mod.rs	2026-11-06 20:49:28.403904460 +0000
++++ b/src/platform_impl/android/mod.rs	2026-11-06 20:49:36.195152454 +0000
+@@ -6,7 +6,7 @@
+ use std::sync::{mpsc, Arc, Mutex};
+ use std::time::{Duration, Instant};
+ 
+-use android_activity::input::{InputEvent, KeyAction, Keycode, MotionAction};
++use android_activity::input::{Axis, InputEvent, KeyAction, Keycode, MotionAction};
+ use android_activity::{
+     AndroidApp, AndroidAppWaker, ConfigurationRef, InputStatus, MainEvent, Rect,
+ };
+@@ -18,6 +18,7 @@
+ use crate::error::EventLoopError;
+ use crate::event::{self, Force, InnerSizeWriter, StartCause};
+ use crate::event_loop::{self, ActiveEventLoop as RootAEL, ControlFlow, DeviceEvents};
++use crate::keyboard::{Key, KeyCode, KeyLocation, NativeKey, PhysicalKey};
+ use crate::platform::pump_events::PumpStatus;
+ use crate::platform_impl::Fullscreen;
+ use crate::window::{
+@@ -131,6 +132,9 @@
+ #[derive(Debug, Clone, Eq, PartialEq, Hash)]
+ pub struct KeyEventExtra {}
+ 
++/// `AINPUT_SOURCE_CLASS_JOYSTICK`: the source reports absolute joystick axes.
++const SOURCE_CLASS_JOYSTICK: u32 = 0x10;
++
+ pub struct EventLoop<T: 'static> {
+     pub(crate) android_app: AndroidApp,
+     window_target: event_loop::ActiveEventLoop,
+@@ -143,6 +147,8 @@
+     cause: StartCause,
+     ignore_volume_keys: bool,
+     combining_accent: Option<char>,
++    /// sml2-android: held directions of the D-pad hat and left stick.
++    gamepad_directions: [bool; 8],
+ }
+ 
+ #[derive(Debug, Clone, PartialEq)]
+@@ -192,6 +198,7 @@
+             cause: StartCause::Init,
+             ignore_volume_keys: attributes.ignore_volume_keys,
+             combining_accent: None,
++            gamepad_directions: [false; 8],
+         })
+     }
+ 
+@@ -373,6 +380,12 @@
+     {
+         let mut input_status = InputStatus::Handled;
+         match event {
++            // sml2-android: joystick motion carries the D-pad hat and sticks.
++            InputEvent::MotionEvent(motion_event)
++                if u32::from(motion_event.source()) & SOURCE_CLASS_JOYSTICK != 0 =>
++            {
++                self.handle_gamepad_axes(motion_event, callback);
++            },
+             InputEvent::MotionEvent(motion_event) => {
+                 let window_id = window::WindowId(WindowId);
+                 let device_id = event::DeviceId(DeviceId(motion_event.device_id()));
+@@ -481,6 +494,71 @@
+         input_status
+     }
+ 
++    /// sml2-android: turns hat and left-stick axes into F25-F32 presses, in
++    /// the order hat up/down/left/right, then stick up/down/left/right.
++    fn handle_gamepad_axes<F>(
++        &mut self,
++        motion_event: &android_activity::input::MotionEvent<'_>,
++        callback: &mut F,
++    ) where
++        F: FnMut(event::Event<T>, &RootAEL),
++    {
++        const DEAD_ZONE: f32 = 0.5;
++        const KEYS: [KeyCode; 8] = [
++            KeyCode::F25,
++            KeyCode::F26,
++            KeyCode::F27,
++            KeyCode::F28,
++            KeyCode::F29,
++            KeyCode::F30,
++            KeyCode::F31,
++            KeyCode::F32,
++        ];
++        if motion_event.pointer_count() == 0 {
++            return;
++        }
++        let pointer = motion_event.pointer_at_index(0);
++        let (hat_x, hat_y) = (pointer.axis_value(Axis::HatX), pointer.axis_value(Axis::HatY));
++        let (stick_x, stick_y) = (pointer.axis_value(Axis::X), pointer.axis_value(Axis::Y));
++        let held = [
++            hat_y < -DEAD_ZONE,
++            hat_y > DEAD_ZONE,
++            hat_x < -DEAD_ZONE,
++            hat_x > DEAD_ZONE,
++            stick_y < -DEAD_ZONE,
++            stick_y > DEAD_ZONE,
++            stick_x < -DEAD_ZONE,
++            stick_x > DEAD_ZONE,
++        ];
++        for (index, (&now, key)) in held.iter().zip(KEYS).enumerate() {
++            if self.gamepad_directions[index] == now {
++                continue;
++            }
++            self.gamepad_directions[index] = now;
++            let event = event::Event::WindowEvent {
++                window_id: window::WindowId(WindowId),
++                event: event::WindowEvent::KeyboardInput {
++                    device_id: event::DeviceId(DeviceId(motion_event.device_id())),
++                    event: event::KeyEvent {
++                        state: if now {
++                            event::ElementState::Pressed
++                        } else {
++                            event::ElementState::Released
++                        },
++                        physical_key: PhysicalKey::Code(key),
++                        logical_key: Key::Unidentified(NativeKey::Unidentified),
++                        location: KeyLocation::Standard,
++                        repeat: false,
++                        text: None,
++                        platform_specific: KeyEventExtra {},
++                    },
++                    is_synthetic: false,
++                },
++            };
++            callback(event, self.window_target());
++        }
++    }
++
+     pub fn run<F>(mut self, event_handler: F) -> Result<(), EventLoopError>
+     where
+         F: FnMut(event::Event<T>, &event_loop::ActiveEventLoop),

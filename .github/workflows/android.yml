@@ -1,0 +1,78 @@
+name: Android TV build
+
+# Builds the armeabi-v7a Google TV APK. Runs on pushes that touch the game or
+# the Android packaging, on demand, and from release.yml for tagged releases.
+#
+# Signing: add repository secrets ANDROID_KEYSTORE_BASE64 (base64 of a .jks or
+# .keystore), ANDROID_KEYSTORE_PASSWORD and ANDROID_KEY_ALIAS so every build is
+# signed with the same key and installs over the previous one. Without them each
+# run signs with a throwaway key, and updating needs an uninstall first.
+on:
+  push:
+    paths:
+      - 'crates/**'
+      - 'tools/android/**'
+      - 'Cargo.toml'
+      - 'Cargo.lock'
+      - '.github/workflows/android.yml'
+  workflow_dispatch:
+  workflow_call:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: android-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  apk:
+    name: APK armeabi-v7a
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+
+      - name: Install stable Rust
+        run: |
+          rustup default stable
+          rustup target add armv7-linux-androideabi
+
+      - uses: Swatinem/rust-cache@v2
+        with:
+          key: android-armv7
+
+      - name: Android policy tests
+        run: cargo test --locked -p sml2-desktop --no-default-features --lib 'input::'
+
+      - name: Restore signing key
+        env:
+          KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+        run: |
+          if [ -n "$KEYSTORE_BASE64" ]; then
+            echo "$KEYSTORE_BASE64" | base64 -d > "$RUNNER_TEMP/release.keystore"
+            echo "SML2_ANDROID_KEYSTORE=$RUNNER_TEMP/release.keystore" >> "$GITHUB_ENV"
+          else
+            echo "::warning::No ANDROID_KEYSTORE_BASE64 secret; signing with a throwaway key."
+          fi
+
+      - name: Build APK
+        env:
+          SML2_ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD || 'android' }}
+          SML2_ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS || 'sml2' }}
+        run: |
+          export ANDROID_NDK_HOME="${ANDROID_NDK_LATEST_HOME:-$ANDROID_NDK_HOME}"
+          tools/android/build-apk.sh
+          git diff --exit-code Cargo.lock
+
+      - uses: actions/upload-artifact@v7
+        with:
+          name: six-golden-coins-androidtv-armeabi-v7a.apk
+          path: target/android/six-golden-coins-androidtv-armeabi-v7a.apk
+          if-no-files-found: error
+          retention-days: 14

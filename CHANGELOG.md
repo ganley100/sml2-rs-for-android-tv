@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- Android TV / Google TV build (`armeabi-v7a` APK) with a leanback banner,
+  AAudio sound, controller and TV-remote input, and an in-app ROM browser.
+  See `docs/android-tv.md`.
+
 ## [v0.2.1] - 2026-11-02
 
 ### Added

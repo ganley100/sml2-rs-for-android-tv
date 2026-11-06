@@ -1,8 +1,8 @@
 name: Release Build
 
 # A `v*` tag builds and publishes a release with one game executable per
-# platform. A manual run builds and uploads the same files as workflow
-# artifacts without publishing anything.
+# platform plus the Android TV APK. A manual run builds and uploads the same
+# files as workflow artifacts without publishing anything.
 on:
   push:
     tags:
@@ -107,9 +107,15 @@ jobs:
           if-no-files-found: error
           retention-days: 7
 
+  android:
+    name: Build Android TV APK
+    needs: gate
+    uses: ./.github/workflows/android.yml
+    secrets: inherit
+
   publish:
     name: Publish GitHub Release
-    needs: build
+    needs: [build, android]
     if: startsWith(github.ref, 'refs/tags/v')
     runs-on: ubuntu-latest
     steps:

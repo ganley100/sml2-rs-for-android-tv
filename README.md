@@ -56,6 +56,10 @@ Silicon**. Each is a single executable.
 
 ROMs and imported game graphics are not included.
 
+**Android TV / Google TV** (for example the onn. streaming stick): install the
+`armeabi-v7a` APK from the **Android TV build** workflow or a release, then see
+[Android TV](docs/android-tv.md) for sideloading, adding your ROM, and controls.
+
 ## SML2DX
 
 Import an **SML2DX v1.8.1** ROM or IPS patch through

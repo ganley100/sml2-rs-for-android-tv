@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Android TV / Google TV package for Six Golden Coins. build-apk.sh sets the
+     SDK levels and version; the Rust code lives in crates/sml2-android. -->
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    package="io.github.ganley100.sixgoldencoins">
+
+    <uses-feature android:name="android.software.leanback" android:required="false" />
+    <uses-feature android:name="android.hardware.touchscreen" android:required="false" />
+    <uses-feature android:name="android.hardware.gamepad" android:required="false" />
+    <uses-feature android:glEsVersion="0x00030000" android:required="true" />
+
+    <!-- Lets the ROM browser read the Download folder (legacy storage, targetSdk 29). -->
+    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
+
+    <application
+        android:label="Six Golden Coins"
+        android:icon="@mipmap/ic_launcher"
+        android:banner="@drawable/banner"
+        android:hasCode="false"
+        android:isGame="true"
+        android:appCategory="game"
+        android:requestLegacyExternalStorage="true">
+
+        <activity
+            android:name="android.app.NativeActivity"
+            android:exported="true"
+            android:launchMode="singleTask"
+            android:screenOrientation="landscape"
+            android:theme="@android:style/Theme.NoTitleBar.Fullscreen"
+            android:configChanges="orientation|screenSize|smallestScreenSize|screenLayout|keyboard|keyboardHidden|navigation|uiMode|density">
+            <meta-data android:name="android.app.lib_name" android:value="sml2_android" />
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+                <category android:name="android.intent.category.LEANBACK_LAUNCHER" />
+            </intent-filter>
+        </activity>
+    </application>
+</manifest>
